@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UtkalDarshan - Divine Journeys Across Odisha</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Poppins Font & Animate.css -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <!-- Leaflet + AntPath for animated routes -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-ant-path@1.3.0/dist/leaflet-ant-path.min.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .accordion-header {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .accordion-content {
+            display: none;
+            animation: fadeIn 0.65s;
+        }
+
+        .active .accordion-content {
+            display: block;
+        }
+
+        .site-title {
+            letter-spacing: 4px;
+            color: #ec7014;
+        }
+
+        .custom-btn {
+            background: linear-gradient(90deg, #f59e42 0%, #ec7014 100%);
+            color: #fff;
+        }
+
+        .custom-btn:hover {
+            filter: brightness(0.96);
+        }
+
+        .nav-link {
+            transition: color .32s;
+        }
+
+        .nav-link:hover,
+        .nav-link.active-nav {
+            color: #ec7014;
+        }
+
+        #fab,
+        #contact-fab {
+            position: fixed;
+            z-index: 21;
+            background: linear-gradient(135deg, #ff851b, #fbc531);
+            color: #fff;
+            border-radius: 50%;
+            width: 54px;
+            height: 54px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, .17);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            cursor: pointer;
+            transition: transform .14s;
+        }
+
+        #fab {
+            bottom: 30px;
+            right: 28px;
+        }
+
+        #fab:hover {
+            transform: scale(1.08);
+        }
+
+        #contact-fab {
+            bottom: 100px;
+            right: 28px;
+        }
+
+        #contact-fab:hover {
+            transform: scale(1.08);
+        }
+
+        .site-nav {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(6px);
+            background: rgba(255, 255, 255, .93);
+        }
+
+        .active-nav-spot {
+            box-shadow: 0 2px 0 0 #ec7014;
+        }
+
+        #interactiveMap {
+            min-height: 400px;
+            z-index: 1;
+        }
+
+        .itinerary-step {
+            margin-bottom: 1.2rem;
+        }
+
+        .itinerary-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ec7014 80%, #fff0 100%);
+            border: 2px solid #f59e42;
+            margin-right: 16px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        #modal-bg,
+        #paymentModalBg,
+        #contactModalBg {
+            display: none;
+            position: fixed;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(30, 30, 30, .56);
+            z-index: 30;
+        }
+
+        #virtualModal,
+        #paymentModal,
+        #contactModal {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            width: 95vw;
+            max-width: 400px;
+            min-height: 320px;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            border-radius: 1rem;
+            z-index: 31;
+            box-shadow: 0 7px 40px rgba(44, 35, 12, 0.12);
+        }
+
+        #virtualModal iframe {
+            border-radius: 0.8rem;
+        }
+
+        .fade-in {
+            animation: fadeIn .8s;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        input,
+        select {
+            transition: .2s;
+        }
+
+        .payment-selector input[type=radio]:checked+label {
+            background: #f59e42;
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body class="bg-yellow-50 text-gray-800 min-h-screen">
+
+    <!-- Navigation Bar -->
+    <nav class="site-nav py-3 shadow-md">
+        <div
+            class="container max-w-6xl mx-auto flex flex-wrap md:flex-nowrap items-center justify-between animate__animated animate__fadeInDown">
+            <div class="text-2xl font-bold uppercase site-title tracking-wider">UtkalDarshan</div>
+            <div class="flex gap-6 mt-3 md:mt-0 text-md font-semibold">
+                <a class="nav-link cursor-pointer" href="#interactiveMapSection">Map</a>
+                <a class="nav-link cursor-pointer" href="#howToReach">How to Reach</a>
+                <a class="nav-link cursor-pointer" href="#tourPackages">Tour Planner</a>
+                <a class="nav-link cursor-pointer" href="#temples">Temples</a>
+                <a class="nav-link cursor-pointer" href="#nature">Nature</a>
+                <a class="nav-link cursor-pointer" href="#clubs">Leisure</a>
+                <a class="nav-link cursor-pointer" href="#itinerary">Itinerary</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto p-6 pt-4">
+        <!-- TITLE -->
+        <div class="text-center mb-6 animate__animated animate__fadeIn">
+            <h1 class="text-4xl font-extrabold mb-1 site-title">UtkalDarshan - Divine Journeys Across Odisha</h1>
+            <p class="text-lg text-blue-900 animate__animated animate__fadeInUp">Explore, Experience, and Plan
+                Incredible Odisha Tours</p>
+        </div>
+
+        <!-- Interactive Map with Animated Routes -->
+        <section id="interactiveMapSection" class="mb-10">
+            <h2 class="text-2xl font-bold text-orange-700 mb-3 flex items-center gap-2">
+                <span class="animate__animated animate__pulse animate__faster animate__infinite">🗺️</span> Interactive
+                Map and Animated Routes
+            </h2>
+            <div id="interactiveMap" class="w-full h-96 rounded shadow-lg border"></div>
+            <p class="text-sm text-gray-700 mt-2">Click markers for site info, follow animated routes to plan your trip.
+            </p>
+        </section>
+
+        <!-- How To Reach -->
+        <section id="howToReach" class="mb-10">
+            <div class="border rounded-lg shadow animate__animated animate__fadeInLeft">
+                <div class="accordion-header p-4 bg-orange-100 text-xl font-semibold text-orange-700"
+                    onclick="toggleAccordion(this)">
+                    🚆✈️🚌 How to Reach Odisha
+                </div>
+                <div class="accordion-content p-4 bg-white">
+                    <ul class="list-disc pl-6 space-y-2 text-lg">
+                        <li><b>By Train:</b> <a href="https://www.irctc.co.in/" target="_blank"
+                                class="text-orange-600 hover:underline">Book via IRCTC</a></li>
+                        <li><b>By Air:</b> <a href="https://www.aai.aero/en/airports/bhubaneswar" target="_blank"
+                                class="text-orange-600 hover:underline">Biju Patnaik International Airport</a></li>
+                        <li><b>By Bus:</b> <a href="https://osrtc.in/" target="_blank"
+                                class="text-orange-600 hover:underline">Odisha State Road Transport</a></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tour Planner with Pickup/Hotel/Guide -->
+        <section id="tourPackages" class="mb-10">
+            <div class="border rounded-lg shadow animate__animated animate__fadeInRight">
+                <div class="accordion-header p-4 bg-orange-100 text-xl font-semibold text-orange-700"
+                    onclick="toggleAccordion(this)">
+                    🌐 Tour Packages & Plan Your Trip
+                </div>
+                <div class="accordion-content p-4 bg-white">
+                    <form class="mb-6 grid md:grid-cols-3 gap-3 animate__animated animate__fadeIn">
+                        <div>
+                            <label class="font-medium mr-2">Pickup Point:</label>
+                            <select id="pickupType" class="border py-1 px-2 rounded" onchange="updateCabOptions()">
+                                <option value="Airport">Airport</option>
+                                <option value="Railway Station">Railway Station</option>
+                                <option value="Bus Stand">Bus Stand</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="font-medium mr-2">Vehicle Type:</label>
+                            <select id="vehicleType" class="border py-1 px-2 rounded">
+                                <option value="Cab">Cab</option>
+                                <option value="Auto">Auto</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="font-medium mr-2">No. of Guests:</label>
+                            <input type="number" min="1" max="12" value="2" id="numGuests"
+                                class="border py-1 px-2 w-16 rounded" onchange="suggestHotelsGuides()">
+                        </div>
+                    </form>
+                    <button onclick="showCabBooking()" type="button"
+                        class="custom-btn py-2 px-6 rounded font-semibold shadow animate__animated animate__heartBeat animate__infinite">Book
+                        Transfer</button>
+                    <div id="cabOutput" class="mt-3 text-green-700 font-medium animate__animated animate__fadeIn"></div>
+                    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <a href="https://bhubaneswartourism.in/bhubaneswar-puri-1-night-2-days-tour-packages"
+                            target="_blank"
+                            class="block border p-3 rounded-lg hover:bg-orange-50 text-orange-700 font-semibold shadow animate__animated animate__fadeInLeftBig">1
+                            Night / 2 Days Tour Package</a>
+                        <a href="https://bhubaneswartourism.in/bhubaneswar-puri-2-nights-3-days-tour-packages"
+                            target="_blank"
+                            class="block border p-3 rounded-lg hover:bg-orange-50 text-orange-700 font-semibold shadow animate__animated animate__fadeInRightBig">2
+                            Nights / 3 Days Tour Package</a>
+                    </div>
+                    <!-- Hotel & Guide suggestions -->
+                    <div class="mt-6 bg-orange-50 rounded-xl p-5 shadow animate__animated animate__fadeInUp">
+                        <h4 class="font-semibold text-lg mb-3 text-orange-700">Suggested Stays & Guides</h4>
+                        <div id="hotelSuggestions"></div>
+                        <div id="guideSuggestions" class="mt-3"></div>
+                    </div>
+                    <div class="text-center mt-6">
+                        <a href="https://bhubaneswartourism.in/contact" target="_blank"
+                            class="bg-green-600 text-white text-lg font-semibold px-6 py-3 rounded shadow hover:bg-green-700 animate__animated animate__jello">Book
+                            Complete Tour</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Temples -->
+        <section id="temples" class="mb-10">
+            <div class="border rounded-lg shadow animate__animated animate__fadeInUp">
+                <div class="accordion-header p-4 bg-orange-100 text-xl font-semibold text-orange-700"
+                    onclick="toggleAccordion(this)">
+                    🛕 Famous Temples of Odisha
+                </div>
+                <div class="accordion-content p-4 bg-white">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="animate__animated animate__zoomIn">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/1/1e/Lingaraj_Temple%2C_Bhubaneswar.jpg"
+                                alt="Lingaraj Temple" class="rounded mb-2 shadow">
+                            <a href="https://odishatourism.gov.in/content/tourism/en/discover/attractions/temples/lingaraj-temple.html"
+                                target="_blank" class="text-orange-700 font-semibold hover:underline">Lingaraj
+                                Temple</a>
+                            <button class="block mt-1 underline text-sm text-blue-700"
+                                onclick="openVirtualTour('https://www.google.com/maps/embed?pb=!4v1643665558190!6m8!1m7!1sCAoSLEFGMVFpcFBMdVp4T19LMWNHTnN1RkFIaXRnalR5WGZPME1xNjFIYXRzR1A4!2m2!1d20.2398077!2d85.8335107!3f44.71!4f-18.8!5f0.7820865974627469')">Virtual
+                                Tour</button>
+                        </div>
+                        <div class="animate__animated animate__zoomIn">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/e/e7/Mukteswar_temple_front_view.jpg"
+                                alt="Mukteswar Temple" class="rounded mb-2 shadow">
+                            <a href="https://odishatourism.gov.in/content/tourism/en/discover/attractions/temples/mukteswar-temple.html"
+                                target="_blank" class="text-orange-700 font-semibold hover:underline">Mukteswar
+                                Temple</a>
+                            <button class="block mt-1 underline text-sm text-blue-700"
+                                onclick="openVirtualTour('https://www.google.com/maps/embed?pb=!4v1643665514102!6m8!1m7!1sCAoSLEFGMVFpcEo1WkdNWHQ5LUtCd21DWVU2LWxUZmh6OFRoR1ZPb3V1WFlPYjc4!2m2!1d20.2484025!2d85.833036!3f80!4f-9.27!5f0.7820865974627469')">Virtual
+                                Tour</button>
+                        </div>
+                        <div class="animate__animated animate__zoomIn">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/9/9f/Rajarani_Temple%2C_Bhubaneswar.jpg"
+                                alt="Rajarani Temple" class="rounded mb-2 shadow">
+                            <a href="https://odishatourism.gov.in/content/tourism/en/discover/attractions/temples/rajarani-temple.html"
+                                target="_blank" class="text-orange-700 font-semibold hover:underline">Rajarani
+                                Temple</a>
+                            <button class="block mt-1 underline text-sm text-blue-700"
+                                onclick="openVirtualTour('https://www.google.com/maps/embed?pb=!4v1643665495569!6m8!1m7!1sCAoSLEFGMVFpcE05UkZTQW1zaWhVSVFteTF4ZXV4cmetbWZMLVphbmtlZmNoajNn!2m2!1d20.2542516!2d85.8413945!3f78.73!4f-12.38!5f0.7820865974627469')">Virtual
+                                Tour</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Nature: Hills, Parks, etc. -->
+        <section id="nature" class="mb-10">
+            <div class="border rounded-lg shadow animate__animated animate__fadeInUp">
+                <div class="accordion-header p-4 bg-orange-100 text-xl font-semibold text-orange-700"
+                    onclick="toggleAccordion(this)">
+                    ⛰️ Hill Stations, Zoo & Parks
+                </div>
+                <div class="accordion-content p-4 bg-white">
+                    <ul class="list-disc pl-6 space-y-2 text-lg">
+                        <li><a href="https://odishatourism.gov.in/content/tourism/en/discover/attractions/buddhist-sites/dhauli.html"
+                                target="_blank" class="text-orange-600 hover:underline">Dhauli Shanti Stupa</a>
+                            <button class="ml-2 underline text-sm text-blue-700"
+                                onclick="openVirtualTour('https://www.google.com/maps/embed?pb=!4v1643665531447!6m8!1m7!1sCAoSLEFGMVFpcFB6cVAtVUJnNkpSWG5IbVV3QUVpVHVUcmZ2NmNiUy1oczZKb2tk!2m2!1d20.1824!2d85.8348!3f16!4f-14.89!5f0.7820865974627469')">Virtual
+                                Tour</button>
+                        </li>
+                        <li><a href="https://odishatourism.gov.in/content/tourism/en/discover/attractions/historical/khandagiri-and-udayagiri-caves.html"
+                                target="_blank" class="text-orange-600 hover:underline">Udayagiri & Khandagiri Caves</a>
+                            <button class="ml-2 underline text-sm text-blue-700"
+                                onclick="openVirtualTour('https://www.google.com/maps/embed?pb=!4v1643665477138!6m8!1m7!1sCAoSLEFGMVFpcE9yOXFicEw5X1Q2YUdlYTYyZGp3WkhpenhzVXhmUVdfaHR4YnNB!2m2!1d20.2458!2d85.7684!3f15.72!4f-10.99!5f0.7820865974627469')">Virtual
+                                Tour</button>
+                        </li>
+                        <li><a href="https://nandankanan.org/" target="_blank"
+                                class="text-orange-600 hover:underline">Nandankanan Zoological Park</a></li>
+                        <li><a href="https://bmc.gov.in/view-details.php?cid=32" target="_blank"
+                                class="text-orange-600 hover:underline">Ekamra Kanan Botanical Garden</a></li>
+                        <li><a href="https://niccoparks.com/bda-nicco-park-bhubaneswar/" target="_blank"
+                                class="text-orange-600 hover:underline">BDA Nicco Park</a></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Clubs & Leisure -->
+        <section id="clubs" class="mb-10">
+            <div class="border rounded-lg shadow animate__animated animate__fadeInUp">
+                <div class="accordion-header p-4 bg-orange-100 text-xl font-semibold text-orange-700"
+                    onclick="toggleAccordion(this)">
+                    🎉 Clubs & 🍽️ Restaurants
+                </div>
+                <div class="accordion-content p-4 bg-white">
+                    <ul class="list-disc pl-6 space-y-2 text-lg">
+                        <li><a href="https://www.mayfairhotels.com/mayfair-lagoon-bhubaneswar/#dining" target="_blank"
+                                class="text-orange-600 hover:underline">The Cellar at Mayfair Lagoon</a></li>
+                        <li><a href="https://www.zomato.com/bhubaneswar" target="_blank"
+                                class="text-orange-600 hover:underline">Explore Restaurants on Zomato</a></li>
+                        <li><a href="https://www.swostihotels.com/swosti-premium/multi-cuisine-restaurant.php"
+                                target="_blank" class="text-orange-600 hover:underline">Swosti Premium Restaurants</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Itinerary Planner + Booking Button -->
+        <section id="itinerary" class="mb-10">
+            <div class="border rounded-lg shadow animate__animated animate__fadeInUp">
+                <div class="accordion-header p-4 bg-orange-100 text-xl font-semibold text-orange-700"
+                    onclick="toggleAccordion(this)">
+                    🏕️ Travel Itinerary Planner
+                </div>
+                <div class="accordion-content p-4 bg-white">
+                    <form class="flex flex-col md:flex-row md:items-center md:gap-4 gap-2 mb-4" id="itineraryForm">
+                        <div>
+                            <label class="font-medium mr-2">No. of Days:</label>
+                            <input id="tripDays" type="number" min="1" max="10" value="2"
+                                class="border rounded px-2 py-1 w-16">
+                        </div>
+                        <div>
+                            <label class="font-medium mr-2">Interests:</label>
+                            <select id="tripInterest" class="border rounded px-2 py-1">
+                                <option value="classic">Temples & Culture</option>
+                                <option value="nature">Nature & Adventure</option>
+                                <option value="food">Cuisine & Leisure</option>
+                                <option value="mixed">Best of Odisha</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="font-medium mr-2">Persons:</label>
+                            <input id="tripPersons" type="number" min="1" max="20" value="2"
+                                class="border rounded px-2 py-1 w-16">
+                        </div>
+                        <button type="button" class="custom-btn px-6 py-2 rounded font-bold"
+                            onclick="buildItinerary()">Build Itinerary</button>
+                    </form>
+                    <div id="itineraryPlan" class="animate__animated animate__fadeIn"></div>
+                    <!-- Book & Pay Button -->
+                    <div class="text-center mt-6">
+                        <button
+                            class="custom-btn text-lg font-semibold px-8 py-3 rounded shadow hover:bg-orange-200 animate__animated animate__pulse"
+                            type="button" onclick="openPaymentModal()">Book & Pay</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Floating support button -->
+    <div id="fab" title="Need Help or Suggestions?"
+        onclick="window.scrollTo({top: 0,behavior: 'smooth'}); animateChat();">
+        <span class="animate__animated animate__tada">💬</span>
+    </div>
+    <div id="contact-fab" title="Contact Us" onclick="openContactModal()">
+        <span class="animate__animated animate__pulse animate__infinite">📞</span>
+    </div>
+
+    <!-- Virtual Tour Modal -->
+    <div id="modal-bg" onclick="closeVirtualTour()"></div>
+    <div id="virtualModal">
+        <div class="flex justify-between items-center p-2 border-b">
+            <span class="text-lg font-bold text-orange-700">Virtual Tour</span>
+            <button class="text-xl text-gray-500 hover:text-orange-700 px-3" onclick="closeVirtualTour()">✖</button>
+        </div>
+        <iframe id="virtualFrame" src="" width="100%" height="430" allowfullscreen></iframe>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="paymentModalBg" onclick="closePaymentModal()"></div>
+    <div id="paymentModal" class="fade-in">
+        <div class="flex justify-between items-center p-4 border-b">
+            <span class="text-lg font-bold text-orange-700">Booking & Payment</span>
+            <button class="text-2xl text-gray-500 hover:text-orange-700 px-3" onclick="closePaymentModal()">✖</button>
+        </div>
+        <form id="paymentForm" class="p-5 space-y-3" onsubmit="submitPayment(event)">
+            <div><b>Your Trip:</b>
+                <span id="summaryText" class="ml-2 text-gray-700"></span>
+            </div>
+            <input required type="text" class="border rounded px-3 py-2 w-full" placeholder="Your name">
+            <input required type="email" class="border rounded px-3 py-2 w-full" placeholder="Your email">
+            <input required type="tel" pattern="[0-9]{10,13}" class="border rounded px-3 py-2 w-full"
+                placeholder="Mobile">
+            <div>Pay via:</div>
+            <div class="flex gap-2 payment-selector pb-1">
+                <input type="radio" name="paymode" id="upi" value="upi" checked hidden>
+                <label for="upi"
+                    class="bg-orange-50 px-4 py-2 rounded cursor-pointer border border-orange-300 hover:bg-orange-300 flex items-center gap-2"><img
+                        src="https://upload.wikimedia.org/wikipedia/commons/7/79/PhonePe_Logo.png" alt="PhonePe"
+                        class="w-5 h-5">PhonePe</label>
+
+                <input hidden type="radio" name="paymode" id="gpay" value="gpay">
+                <label for="gpay"
+                    class="bg-orange-50 px-4 py-2 rounded cursor-pointer border border-orange-300 hover:bg-orange-300 flex items-center gap-2"><img
+                        src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Google_Pay_%28GPay%29_Logo.svg"
+                        alt="Google Pay" class="w-5 h-5">GPay</label>
+
+                <input hidden type="radio" name="paymode" id="paytm" value="paytm">
+                <label for="paytm"
+                    class="bg-orange-50 px-4 py-2 rounded cursor-pointer border border-orange-300 hover:bg-orange-300 flex items-center gap-2"><img
+                        src="https://upload.wikimedia.org/wikipedia/commons/5/55/Paytm_logo.png"
+                        class="w-5 h-5">Paytm</label>
+            </div>
+            <div class="text-sm">Or scan UPI QR for any app:</div>
+            <div class="flex justify-center"><img src="https://i.postimg.cc/fyThyXc1/dummy-upi-qr.png" alt="UPI QR"
+                    class="w-28 h-28 rounded shadow border"></div>
+            <button type="submit" class="custom-btn w-full py-2 rounded font-bold mt-2">Confirm Payment</button>
+            <div id="paymentStatus" class="text-green-700 font-bold text-center mt-3"></div>
+        </form>
+    </div>
+
+    <!-- Contact Us Modal -->
+    <div id="contactModalBg" onclick="closeContactModal()"></div>
+    <div id="contactModal" class="fade-in">
+        <div class="flex justify-between items-center p-4 border-b">
+            <span class="text-lg font-bold text-orange-700">Contact Us</span>
+            <button class="text-2xl text-gray-500 px-3 hover:text-orange-700"
+                onclick="closeContactModal()">&#10006;</button>
+        </div>
+        <form class="p-5 space-y-3" id="contactForm" onsubmit="submitContact(event)">
+            <input required class="border rounded px-3 py-2 w-full" placeholder="Your name">
+            <input required type="email" class="border rounded px-3 py-2 w-full" placeholder="Your email">
+            <textarea required class="border rounded px-3 py-2 w-full" placeholder="Your message" rows="3"></textarea>
+            <button class="custom-btn w-full py-2 rounded font-bold">Send Message</button>
+            <div id="contactMsg" class="text-green-700 mt-2 text-center"></div>
+        </form>
+        <div class="text-xs text-gray-500 text-center mt-2 mb-3">Or email: <a href="mailto:info@utkaldarshan.com"
+                class="underline">info@utkaldarshan.com</a></div>
+    </div>
+
+    <footer class="bg-orange-900 text-white text-center p-4 mt-10">
+        <p>&copy; 2025 UtkalDarshan. All rights reserved. | <a href="https://odishatourism.gov.in/" target="_blank"
+                class="underline text-yellow-300">Visit OdishaTourism.gov.in</a></p>
+    </footer>
+
+    <script>
+        function toggleAccordion(header) {
+            const section = header.parentElement;
+            section.classList.toggle('active');
+        }
+        // NAV highlight
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active-nav', 'active-nav-spot'));
+                this.classList.add('active-nav', 'active-nav-spot');
+                const id = this.getAttribute('href').slice(1);
+                const target = document.getElementById(id) || document.querySelector(`[id='${id}']`);
+                if (target) window.scrollTo({ top: target.offsetTop - 56, behavior: 'smooth' });
+            });
+        });
+
+        // Dynamic hotels/guides
+        const hotels = [
+            { name: "Mayfair Lagoon", link: "https://www.mayfairhotels.com/mayfair-lagoon-bhubaneswar/", type: "Luxury", min: 2, max: 12 },
+            { name: "Trident Bhubaneswar", link: "https://www.tridenthotels.com/hotels-in-bhubaneswar", type: "5-star", min: 2, max: 10 },
+            { name: "Swosti Grand", link: "https://www.swostihotels.com/swosti-grand/", type: "Budget", min: 1, max: 6 },
+            { name: "Hotel Suncity", link: "#", type: "Standard", min: 1, max: 8 }
+        ];
+        const guides = [
+            { name: "Odisha Heritage Walks", desc: "Expert local guide for temples & caves", max: 20 },
+            { name: "Eco Tours Odisha", desc: "Nature & wildlife expert for parks & hills", max: 10 },
+            { name: "City Food Trails", desc: "Discover local cuisine and city clubs", max: 15 }
+        ];
+        function suggestHotelsGuides() {
+            const guests = parseInt(document.getElementById('numGuests').value) || 2;
+            let hotelHtml = "<ul class='list-disc pl-5'>";
+            hotels.forEach(hotel => {
+                if (guests >= hotel.min && guests <= hotel.max) {
+                    hotelHtml += `<li><a href=\"${hotel.link}\" target=\"_blank\" class=\"text-orange-700 font-semibold hover:underline\">${hotel.name}</a> – ${hotel.type} (${hotel.min}-${hotel.max} guests)</li>`;
+                }
+            });
+            hotelHtml += "</ul>";
+            document.getElementById('hotelSuggestions').innerHTML = hotelHtml;
+            let guideHtml = "<ul class='list-disc pl-5'>";
+            guides.forEach(g => {
+                if (guests <= g.max) {
+                    guideHtml += `<li>${g.name}: <span class='text-gray-700'>${g.desc} (up to ${g.max} people)</span></li>`;
+                }
+            });
+            guideHtml += "</ul>";
+            document.getElementById('guideSuggestions').innerHTML = guideHtml;
+        }
+        suggestHotelsGuides();
+
+        function showCabBooking() {
+            const pickupType = document.getElementById('pickupType').value;
+            const vehicleType = document.getElementById('vehicleType').value;
+            const guests = document.getElementById('numGuests').value;
+            document.getElementById('cabOutput').innerText =
+                `Your ${vehicleType.toLowerCase()} from ${pickupType} for ${guests} guest(s) is ready to be booked!`;
+        }
+
+        // Interactive Leaflet Map with Animated Routes
+        const locations = [
+            { name: "Biju Patnaik Airport", coords: [20.2444, 85.8179] },
+            { name: "Railway Station", coords: [20.268, 85.8225] },
+            { name: "Main Bus Stand", coords: [20.2961, 85.8267] },
+            { name: "Lingaraj Temple", coords: [20.2541, 85.8288] },
+            { name: "Mukteswar Temple", coords: [20.2484, 85.8330] },
+            { name: "Rajarani Temple", coords: [20.2543, 85.8414] },
+            { name: "Dhauli Shanti Stupa", coords: [20.1822, 85.8347] },
+            { name: "Udayagiri Caves", coords: [20.2933, 85.8073] },
+            { name: "Nandankanan Zoo", coords: [20.3122, 85.7815] }
+        ];
+        const routes = [
+            { name: "Airport to Temples", path: [[20.2444, 85.8179], [20.268, 85.8225], [20.2541, 85.8288], [20.2484, 85.8330], [20.2543, 85.8414]] },
+            { name: "Temple to Nature", path: [[20.2541, 85.8288], [20.1822, 85.8347], [20.2933, 85.8073], [20.3122, 85.7815]] }
+        ];
+        function initTravelMap() {
+            const map = L.map('interactiveMap').setView([20.269, 85.824], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+            locations.forEach(loc => {
+                L.marker(loc.coords).addTo(map)
+                    .bindPopup(`<b>${loc.name}</b>`);
+            });
+            routes.forEach(route => {
+                L.polyline.antPath(route.path, {
+                    color: '#EC7014',
+                    pulseColor: '#FFC057',
+                    delay: 350,
+                    dashArray: [10, 17],
+                    weight: 7,
+                    opacity: 0.8
+                }).addTo(map);
+            });
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(initTravelMap, 350);
+        });
+
+        // Itinerary Planner & Book/Pay
+        function buildItinerary() {
+            const days = parseInt(document.getElementById('tripDays').value) || 1;
+            const persons = parseInt(document.getElementById('tripPersons').value) || 1;
+            const interest = document.getElementById('tripInterest').value;
+            let steps = [];
+            if (interest === 'classic') {
+                steps = [
+                    'Arrival & Hotel Check-in',
+                    'Visit Lingaraj Temple, Mukteswar Temple',
+                    days >= 2 ? 'Rajarani Temple & Evening Craft Market' : '',
+                    days >= 2 ? 'Next: Puri or Konark Temple Day Trip' : ''
+                ];
+            } else if (interest === 'nature') {
+                steps = [
+                    'Arrival & Hotel Check-in',
+                    'Dhauli Shanti Stupa & Nature Walk',
+                    days >= 2 ? 'Nandankanan Zoo & Botanical Garden' : ''
+                ];
+            } else if (interest === 'food') {
+                steps = [
+                    'Arrival, Try Odia Breakfast',
+                    'Heritage Food Walk: Jagannath Prasad, Temple Offerings',
+                    days >= 2 ? 'Evening at Ekamra Kanan & Clubs' : ''
+                ];
+            } else { // mixed
+                steps = [
+                    'Arrival & Check-in',
+                    'Explore Old Bhubaneswar Temples',
+                    days >= 2 ? 'Hill View: Dhauli & Udayagiri, Zoo Safari' : '',
+                    days >= 3 ? 'City Food Trails & Leisure at Nicco Park' : ''
+                ];
+            }
+            let out = '';
+            steps = steps.filter(Boolean).slice(0, days + 1);
+            for (let i = 0; i < steps.length; ++i)
+                out += `<div class="itinerary-step flex items-center animate__animated animate__fadeInUp"><span class="itinerary-dot"></span><span>${steps[i]}</span></div>`;
+            document.getElementById('itineraryPlan').innerHTML = out;
+
+            // Save trip details for booking/summary
+            window.currentTripDetails = { days, persons, interest };
+        }
+        buildItinerary();
+
+        // Payment Modal Logic
+        function openPaymentModal() {
+            const det = window.currentTripDetails || {
+                days: document.getElementById('tripDays').value || 1,
+                persons: document.getElementById('tripPersons').value || 1,
+                interest: document.getElementById('tripInterest').value || 'mixed'
+            };
+            let interestText = {
+                classic: "Temples & Culture", nature: "Nature & Adventure",
+                food: "Cuisine & Leisure", mixed: "Best of Odisha"
+            }[det.interest] || "Best of Odisha";
+            document.getElementById('summaryText').innerText =
+                `${det.days} day(s), ${det.persons} person(s), interest: ${interestText}`;
+            document.getElementById('paymentModalBg').style.display = 'block';
+            document.getElementById('paymentModal').style.display = 'block';
+        }
+        function closePaymentModal() {
+            document.getElementById('paymentModalBg').style.display = 'none';
+            document.getElementById('paymentModal').style.display = 'none';
+            document.getElementById('paymentStatus').innerText = '';
+        }
+        function submitPayment(ev) {
+            ev.preventDefault();
+            document.getElementById('paymentStatus').innerText = "Payment Successful! Booking Confirmed. You'll get an email & WhatsApp update.";
+            setTimeout(closePaymentModal, 2200);
+        }
+
+        // Virtual Tour Feature (modal)
+        function openVirtualTour(url) {
+            event.preventDefault();
+            document.getElementById('virtualFrame').src = url;
+            document.getElementById('modal-bg').style.display = 'block';
+            document.getElementById('virtualModal').style.display = 'block';
+        }
+        function closeVirtualTour() {
+            document.getElementById('virtualFrame').src = '';
+            document.getElementById('modal-bg').style.display = 'none';
+            document.getElementById('virtualModal').style.display = 'none';
+        }
+
+        // FAB button animation
+        function animateChat() {
+            document.getElementById('fab').classList.add('animate__bounce');
+            setTimeout(() => { document.getElementById('fab').classList.remove('animate__bounce') }, 800);
+            alert("Need custom help or WhatsApp chat? Feature coming soon!");
+        }
+        // Contact modal
+        function openContactModal() {
+            document.getElementById('contactModalBg').style.display = 'block';
+            document.getElementById('contactModal').style.display = 'block';
+        }
+        function closeContactModal() {
+            document.getElementById('contactModalBg').style.display = 'none';
+            document.getElementById('contactModal').style.display = 'none';
+            document.getElementById('contactMsg').innerHTML = '';
+        }
+        function submitContact(e) {
+            e.preventDefault();
+            document.getElementById('contactMsg').innerHTML = 'Thank you! We will contact you soon.';
+            setTimeout(closeContactModal, 2200);
+        }
+    </script>
+</body>
+
+</html>
